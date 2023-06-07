@@ -13,6 +13,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 
+const playerColors = ["blue", "red", "orange", "yellow", "green", "purple"];
+
 function randomFromArray(array) {
 	return array[Math.floor(Math.random() * array.length)];
 }
@@ -80,7 +82,7 @@ function createName() {
       playerId = user.uid;
       playerRef = firebase.database().ref(`players/${playerId}`);
 
-      //const name = createName();
+      const name = createName();
       //playerNameInput.value = name;
 
       //const {x, y} = getRandomSafeSpot();
@@ -88,16 +90,16 @@ function createName() {
 
       playerRef.set({
         id: playerId,
-        name: "CASA",
+        name, 
         direction: "right",
-        color: "blue",
+        color: randomFromArray(playerColors),
         x: 3,
         y: 3,
         coins: 0,
       })
 
       //Remove me from Firebase when I diconnect
-      //playerRef.onDisconnect().remove();
+      playerRef.onDisconnect().remove();
 
       //Begin the game now that we are signed in
       //initGame();
