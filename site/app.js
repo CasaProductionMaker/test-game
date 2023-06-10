@@ -13,6 +13,28 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = firebase.initializeApp(firebaseConfig);
 
+//My code
+const mapData = {
+  minX: 1,
+  maxX: 14,
+  minY: 4,
+  maxY: 12,
+  blockedSpaces: {
+    "7x4": true,
+    "1x11": true,
+    "12x10": true,
+    "4x7": true,
+    "5x7": true,
+    "6x7": true,
+    "8x6": true,
+    "9x6": true,
+    "10x6": true,
+    "7x9": true,
+    "8x9": true,
+    "9x9": true,
+  },
+};
+
 const playerColors = ["blue", "red", "orange", "yellow", "green", "purple"];
 
 function randomFromArray(array) {
@@ -70,6 +92,46 @@ function createName() {
   return `${prefix} ${animal}`;
 }
 
+function isSolid(x, y) {
+  const blockedNextSpace = mapData.blockedSpaces[getKeyString(x, y)];
+  return (
+    blockedNextSpace || 
+    x >= mapData.maxX || 
+    x < mapData.minX || 
+    y >= mapData.maxY || 
+    y < mapData.minY
+  )
+}
+
+function getRandomSafeSpot() {
+  //We don't look things up by key here, so just return an x/y
+  return randomFromArray([
+    { x: 1, y: 4 },
+    { x: 2, y: 4 },
+    { x: 1, y: 5 },
+    { x: 2, y: 6 },
+    { x: 2, y: 8 },
+    { x: 2, y: 9 },
+    { x: 4, y: 8 },
+    { x: 5, y: 5 },
+    { x: 5, y: 8 },
+    { x: 5, y: 10 },
+    { x: 5, y: 11 },
+    { x: 11, y: 7 },
+    { x: 12, y: 7 },
+    { x: 13, y: 7 },
+    { x: 13, y: 6 },
+    { x: 13, y: 8 },
+    { x: 7, y: 6 },
+    { x: 7, y: 7 },
+    { x: 7, y: 8 },
+    { x: 8, y: 8 },
+    { x: 10, y: 8 },
+    { x: 8, y: 8 },
+    { x: 11, y: 4 },
+  ]);
+}
+
 (function() {
 
 	let playerId;
@@ -82,7 +144,7 @@ function createName() {
   function handleArrowPress(xChange=0, yChange=0) {
     const newX = players[playerId].x + xChange;
     const newY = players[playerId].y + yChange;
-    if (true) {
+    if (!isSolid(newX, newY)) {
       //move to the next space
       players[playerId].x = newX;
       players[playerId].y = newY;
@@ -141,6 +203,8 @@ function createName() {
         </div>
         <div class="Character_you-arrow"></div>
       `);
+
+
       playerElements[addedPlayer.id] = characterElement;
       characterElement.querySelector(".Character_name").innerText = addedPlayer.name;
       characterElement.querySelector(".Character_coins").innerText = addedPlayer.coins;
@@ -150,6 +214,12 @@ function createName() {
       const top = 16 * addedPlayer.y - 4 + "px";
       characterElement.style.transform = `translate3d(${left}, ${top}, 0)`;
       gameContainer.appendChild(characterElement);
+    })
+
+    allPlayersRef.on("child_removed", (snapshot) => {
+      const removedKey = snapshot.val().id;
+      gameContainer.removeChild(playerElements[removedKey]);
+      delete playerElements[removedKey];
     })
   }
 
@@ -163,7 +233,7 @@ function createName() {
       const name = createName();
       //playerNameInput.value = name;
 
-      //const {x, y} = getRandomSafeSpot();
+      const {x, y} = getRandomSafeSpot();
 
 
       playerRef.set({
@@ -171,8 +241,8 @@ function createName() {
         name, 
         direction: "right",
         color: randomFromArray(playerColors),
-        x: 3,
-        y: 10,
+        x,
+        y,
         coins: 0,
       })
 
