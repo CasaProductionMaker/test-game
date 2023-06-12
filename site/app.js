@@ -249,6 +249,9 @@ function getRandomSafeSpot() {
       delete playerElements[removedKey];
     })
 
+    allCoinsRef.on("value", (snapshot) => {
+      coins = snapshot.val() || {};
+    });
     allCoinsRef.on("child_added", (snapshot) => {
       const coin = snapshot.val();
       const key = getKeyString(coin.x, coin.y);
