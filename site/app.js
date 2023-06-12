@@ -140,13 +140,44 @@ function getRandomSafeSpot() {
   let playerElements = {};
   let coins = {};
   let coinElements = {};
+  let potions = {};
+  let potionElements = {};
 
   const gameContainer = document.querySelector(".game-container");
   const playerNameInput = document.querySelector("#player-name");
   const playerColorButton = document.querySelector("#player-color");
 
   function placeCoin() {
-    const {x, y} = getRandomSafeSpot();
+    var x = getRandomSafeSpot().x;
+    var y = getRandomSafeSpot().y;
+
+    if(players[playerId] != null) {
+      x = players[playerId].x;
+      y = players[playerId].y;
+      if(players[playerId].potionDuration > 0) {
+        if(!isSolid(x, y + 1)) {
+          y += 1;
+        } else if(!isSolid(x, y - 1)) {
+          y -= 1;
+        } else if(!isSolid(x + 1, y)) {
+          x += 1;
+        } else if(!isSolid(x + 1, y)) {
+          x -= 1;
+        }
+        if(isSolid(x, y)) {
+          x = players[playerId].x;
+          y = players[playerId].y;
+        }
+      } else {
+        x = getRandomSafeSpot().x;
+        y = getRandomSafeSpot().y;
+      }
+    }
+    if(isSolid(x, y)) {
+      x = getRandomSafeSpot().x;
+      y = getRandomSafeSpot().y;
+    }
+
     const coinRef = firebase.database().ref(`coins/${getKeyString(x, y)}`);
     coinRef.set({
       x, 
@@ -159,6 +190,19 @@ function getRandomSafeSpot() {
     }, randomFromArray(coinTimeouts));
   }
 
+  function usePotion() {
+    if(players[playerId] != null) {
+      if(players[playerId].potionDuration > 0) {
+        playerRef.update({
+          potionDuration: players[playerId].potionDuration - 1,
+        })
+      }
+    }
+    setTimeout(() => {
+      usePotion();
+    }, 1000);
+  }
+
   function attemptGrabCoin(x, y) {
     const key = getKeyString(x, y);
     if (coins[key]) {
@@ -166,6 +210,34 @@ function getRandomSafeSpot() {
       firebase.database().ref(`coins/${key}`).remove();
       playerRef.update({
         coins: players[playerId].coins + 1,
+      })
+      if(players[playerId].coins === 20) {
+        placePotion();
+      }
+    }
+  }
+
+  function placePotion() {
+    const {x, y} = getRandomSafeSpot();
+    const potionRef = firebase.database().ref(`potions/${getKeyString(x, y)}`);
+    potionRef.set({
+      x, 
+      y
+    })
+
+    const potionTimeouts = [40000, 50000, 60000, 30000];
+    setTimeout(() => {
+      placePotion();
+    }, randomFromArray(potionTimeouts));
+  }
+
+  function attemptDrinkPotion(x, y) {
+    const key = getKeyString(x, y);
+    if (potions[key]) {
+      // Remove this key from data, then uptick Player's coin count
+      firebase.database().ref(`potions/${key}`).remove();
+      playerRef.update({
+        potionDuration: players[playerId].potionDuration + 20,
       })
     }
   }
@@ -185,6 +257,7 @@ function getRandomSafeSpot() {
       }
       playerRef.set(players[playerId]);
       attemptGrabCoin(newX, newY);
+      attemptDrinkPotion(newX, newY);
     }
   }
 
@@ -197,6 +270,7 @@ function getRandomSafeSpot() {
 
     const allPlayersRef = firebase.database().ref(`players`);
     const allCoinsRef = firebase.database().ref(`coins`);
+    const allPotionsRef = firebase.database().ref(`potions`);
 
     allPlayersRef.on("value", (snapshot) => {
       //change
@@ -208,6 +282,11 @@ function getRandomSafeSpot() {
         el.querySelector(".Character_coins").innerText = characterState.coins;
         el.setAttribute("data-color", characterState.color);
         el.setAttribute("data-direction", characterState.direction);
+        var luckState = "false";
+        if(characterState.potionDuration > 0) {
+          luckState = "true";
+        }
+        el.querySelector(".Luck-effect").setAttribute("data-luck", luckState);
         const left = 16 * characterState.x + "px";
         const top = 16 * characterState.y - 4 + "px";
         el.style.transform = `translate3d(${left}, ${top}, 0)`;
@@ -230,6 +309,7 @@ function getRandomSafeSpot() {
           <span class="Character_coins">0</span>
         </div>
         <div class="Character_you-arrow"></div>
+        <div class="Luck-effect"></div>
       `);
 
 
@@ -281,6 +361,38 @@ function getRandomSafeSpot() {
       delete coinElements[keyToRemove];
     })
 
+    allPotionsRef.on("value", (snapshot) => {
+      potions = snapshot.val() || {};
+    });
+    allPotionsRef.on("child_added", (snapshot) => {
+      const potion = snapshot.val();
+      const key = getKeyString(potion.x, potion.y);
+      potions[key] = true;
+
+      // Create the DOM Element
+      const potionElement = document.createElement("div");
+      potionElement.classList.add("Potion", "grid-cell");
+      potionElement.innerHTML = `
+        <div class="Potion_shadow grid-cell"></div>
+        <div class="Potion_sprite grid-cell"></div>
+      `;
+
+      // Position the Element
+      const left = 16 * potion.x + "px";
+      const top = 16 * potion.y - 4 + "px";
+      potionElement.style.transform = `translate3d(${left}, ${top}, 0)`;
+
+      // Keep a reference for removal later and add to DOM
+      potionElements[key] = potionElement;
+      gameContainer.appendChild(potionElement);
+    })
+    allPotionsRef.on("child_removed", (snapshot) => {
+      const {x, y} = snapshot.val();
+      const keyToRemove = getKeyString(x, y);
+      gameContainer.removeChild(potionElements[keyToRemove]);
+      delete potionElements[keyToRemove];
+    })
+
     playerNameInput.addEventListener("change", (e) => {
       const newName = e.target.value || createName();
       playerNameInput.value = newName;
@@ -296,6 +408,7 @@ function getRandomSafeSpot() {
       });
     })
     placeCoin();
+    usePotion();
   }
 
 	firebase.auth().onAuthStateChanged((user) => {
@@ -319,6 +432,7 @@ function getRandomSafeSpot() {
         x,
         y,
         coins: 0,
+        potionDuration: 0,
       })
 
       //Remove me from Firebase when I diconnect

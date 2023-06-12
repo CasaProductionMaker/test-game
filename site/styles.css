@@ -103,6 +103,25 @@ button:active {
 	background: url(images/arrow.png) no-repeat no-repeat;
 }
 
+.Luck-effect[data-luck="true"] {
+	display: block;
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	width: 9px;
+	height: 9px;
+	background: url(images/clover.png) no-repeat no-repeat;
+}
+.Luck-effect[data-luck="false"] {
+	display: block;
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	width: 9px;
+	height: 9px;
+	background: unset;
+}
+
 .Character_sprite {
 	overflow: hidden;
 	top: -3px;
@@ -161,5 +180,19 @@ button:active {
   to { transform: translateY(5px) }
 }
 .Coin_shadow {
+	background: url(images/coin-shadow.png) no-repeat no-repeat;
+}
+
+/* Potion */
+
+.Potion_sprite {
+	background: url(images/potion.png) no-repeat no-repeat;
+	animation: potionFloat 0.8s linear infinite alternate-reverse;
+}
+@keyframes potionFloat {
+  from { transform: translateY(0) }
+  to { transform: translateY(3px) }
+}
+.Potion_shadow {
 	background: url(images/coin-shadow.png) no-repeat no-repeat;
 }
