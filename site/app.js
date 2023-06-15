@@ -189,8 +189,7 @@ function getRandomSafeSpot() {
       placeCoin();
     }, randomFromArray(coinTimeouts));
   }
-
-  function usePotion() {
+  function oneSecondLoop() {
     if(players[playerId] != null) {
       if(players[playerId].potionDuration > 0) {
         playerRef.update({
@@ -198,11 +197,23 @@ function getRandomSafeSpot() {
         })
       }
     }
+    //repeat
     setTimeout(() => {
-      usePotion();
+      oneSecondLoop();
     }, 1000);
   }
+  function tickLoop() {
+    if(players[playerId].health <= 0) {
+      playerRef.update({
+        isDead: true
+      })
+    }
 
+    //repeat
+    setTimeout(() => {
+      tickLoop();
+    }, 1000);
+  }
   function attemptGrabCoin(x, y) {
     const key = getKeyString(x, y);
     if (coins[key]) {
@@ -216,7 +227,6 @@ function getRandomSafeSpot() {
       }
     }
   }
-
   function placePotion() {
     const {x, y} = getRandomSafeSpot();
     const potionRef = firebase.database().ref(`potions/${getKeyString(x, y)}`);
@@ -230,7 +240,6 @@ function getRandomSafeSpot() {
       placePotion();
     }, randomFromArray(potionTimeouts));
   }
-
   function attemptDrinkPotion(x, y) {
     const key = getKeyString(x, y);
     if (potions[key]) {
@@ -241,11 +250,10 @@ function getRandomSafeSpot() {
       })
     }
   }
-
   function handleArrowPress(xChange=0, yChange=0) {
     const newX = players[playerId].x + xChange;
     const newY = players[playerId].y + yChange;
-    if (!isSolid(newX, newY)) {
+    if (!isSolid(newX, newY) && !players[playerId].isDead) {
       //move to the next space
       players[playerId].x = newX;
       players[playerId].y = newY;
@@ -260,6 +268,46 @@ function getRandomSafeSpot() {
       attemptDrinkPotion(newX, newY);
     }
   }
+  function handleAttack() {
+    var attackX;
+    if(players[playerId].direction === "right") {
+      //right
+      attackX = players[playerId].x + 1;
+      let playerToAttack;
+      Object.keys(players).forEach((key) => {
+        const characterState = players[key];
+        if(characterState.x === attackX)
+        {
+          playerToAttack = key;
+        }
+      })
+      if(playerToAttack != null) {
+        playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
+        var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+        playerToAttackRef.update({
+          health: players[playerToAttack].health - damage
+        })
+      }
+    } else {
+      //left
+      attackX = players[playerId].x - 1;
+      let playerToAttack;
+      Object.keys(players).forEach((key) => {
+        const characterState = players[key];
+        if(characterState.x === attackX)
+        {
+          playerToAttack = key;
+        }
+      })
+      if(playerToAttack != null) {
+        playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
+        var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+        playerToAttackRef.update({
+          health: players[playerToAttack].health - damage
+        })
+      }
+    }
+  }
 
   function initGame() {
 
@@ -267,6 +315,7 @@ function getRandomSafeSpot() {
     new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1))
     new KeyPressListener("ArrowLeft", () => handleArrowPress(-1, 0))
     new KeyPressListener("ArrowRight", () => handleArrowPress(1, 0))
+    new KeyPressListener("Space", () => handleAttack())
 
     const allPlayersRef = firebase.database().ref(`players`);
     const allCoinsRef = firebase.database().ref(`coins`);
@@ -408,7 +457,8 @@ function getRandomSafeSpot() {
       });
     })
     placeCoin();
-    usePotion();
+    oneSecondLoop();
+    tickLoop();
   }
 
 	firebase.auth().onAuthStateChanged((user) => {
@@ -433,6 +483,8 @@ function getRandomSafeSpot() {
         y,
         coins: 0,
         potionDuration: 0,
+        health: 5, 
+        isDead: false, 
       })
 
       //Remove me from Firebase when I diconnect
