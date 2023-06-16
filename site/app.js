@@ -43,7 +43,6 @@ function randomFromArray(array) {
 function getKeyString(x, y) {
 	return `${x}x${y}`;
 }
-
 function createName() {
   const prefix = randomFromArray([
     "COOL",
@@ -91,7 +90,6 @@ function createName() {
   ]);
   return `${prefix} ${animal}`;
 }
-
 function isSolid(x, y) {
   const blockedNextSpace = mapData.blockedSpaces[getKeyString(x, y)];
   return (
@@ -102,7 +100,6 @@ function isSolid(x, y) {
     y < mapData.minY
   )
 }
-
 function getRandomSafeSpot() {
   //We don't look things up by key here, so just return an x/y
   return randomFromArray([
@@ -203,16 +200,18 @@ function getRandomSafeSpot() {
     }, 1000);
   }
   function tickLoop() {
-    if(players[playerId].health <= 0) {
-      playerRef.update({
-        isDead: true
-      })
+    if(players[playerId] != null) {
+      if(players[playerId].health <= 0) {
+        playerRef.update({
+          isDead: true
+        })
+      }
     }
 
     //repeat
     setTimeout(() => {
       tickLoop();
-    }, 1000);
+    }, 1);
   }
   function attemptGrabCoin(x, y) {
     const key = getKeyString(x, y);
@@ -281,7 +280,7 @@ function getRandomSafeSpot() {
           playerToAttack = key;
         }
       })
-      if(playerToAttack != null) {
+      if(playerToAttack != null && !players[playerId].isDead) {
         playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
         var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
         playerToAttackRef.update({
@@ -299,7 +298,7 @@ function getRandomSafeSpot() {
           playerToAttack = key;
         }
       })
-      if(playerToAttack != null) {
+      if(playerToAttack != null && !players[playerId].isDead) {
         playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
         var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
         playerToAttackRef.update({
@@ -336,6 +335,7 @@ function getRandomSafeSpot() {
           luckState = "true";
         }
         el.querySelector(".Luck-effect").setAttribute("data-luck", luckState);
+        el.querySelector(".Character_health_bar").setAttribute("data-health", characterState.health);
         const left = 16 * characterState.x + "px";
         const top = 16 * characterState.y - 4 + "px";
         el.style.transform = `translate3d(${left}, ${top}, 0)`;
@@ -358,6 +358,7 @@ function getRandomSafeSpot() {
           <span class="Character_coins">0</span>
         </div>
         <div class="Character_you-arrow"></div>
+        <div class="Character_health_bar"></div>
         <div class="Luck-effect"></div>
       `);
 
