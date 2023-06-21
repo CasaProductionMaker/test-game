@@ -139,8 +139,10 @@ function getRandomSafeSpot() {
   let coinElements = {};
   let potions = {};
   let potionElements = {};
+  let isButton = false;
 
   const gameContainer = document.querySelector(".game-container");
+  const respawnContainer = document.querySelector(".respawn-container");
   const playerNameInput = document.querySelector("#player-name");
   const playerColorButton = document.querySelector("#player-color");
 
@@ -175,6 +177,17 @@ function getRandomSafeSpot() {
       y = getRandomSafeSpot().y;
     }
 
+    if(isSolid(x, y)) {
+      x = getRandomSafeSpot().x;
+      y = getRandomSafeSpot().y;
+    }
+
+    if(isSolid(x, y)) {
+      x = getRandomSafeSpot().x;
+      y = getRandomSafeSpot().y;
+    }
+    console.log(isSolid(x, y));
+
     const coinRef = firebase.database().ref(`coins/${getKeyString(x, y)}`);
     coinRef.set({
       x, 
@@ -192,6 +205,28 @@ function getRandomSafeSpot() {
         playerRef.update({
           potionDuration: players[playerId].potionDuration - 1,
         })
+      }
+      if(players[playerId].isDead > 0 && !isButton) {
+        const buttonElement = document.createElement("div");
+        buttonElement.classList.add("respawnButton");
+        buttonElement.innerHTML = (`
+          <button id="respawn">Respawn</button>
+        `)
+        const respawnButton = buttonElement.querySelector("#respawn");
+        respawnButton.addEventListener("click", () => {
+          isButton = false;
+          respawnContainer.querySelector(".respawnButton").remove();
+          const {x, y} = getRandomSafeSpot();
+          playerRef.update({
+            isDead: false, 
+            coins: 0, 
+            health: 5, 
+            x, 
+            y
+          })
+        })
+        respawnContainer.appendChild(buttonElement);
+        isButton = true;
       }
     }
     //repeat
@@ -286,6 +321,14 @@ function getRandomSafeSpot() {
         playerToAttackRef.update({
           health: players[playerToAttack].health - damage
         })
+        if(players[playerToAttack].health - damage <= -1) {
+          playerRef.update({
+            coins: players[playerId].coins + players[playerToAttack].coins
+          })
+          playerToAttackRef.update({
+            coins: 0
+          })
+        }
       }
     } else {
       //left
@@ -304,8 +347,19 @@ function getRandomSafeSpot() {
         playerToAttackRef.update({
           health: players[playerToAttack].health - damage
         })
+        if(players[playerToAttack].health - damage <= -1) {
+          playerRef.update({
+            coins: players[playerId].coins + players[playerToAttack].coins
+          })
+          playerToAttackRef.update({
+            coins: 0
+          })
+        }
       }
     }
+  }
+  function Respawn() {
+    console.log("respawn");
   }
 
   function initGame() {

@@ -22,6 +22,12 @@ html, body {
 	image-rendering: pixelated;
 }
 
+.respawn-container {
+	z-index: 2;
+	align-items: center;
+	justify-content: center;
+}
+
 .player-info {
 	position: absolute;
 	top: 0;
@@ -104,63 +110,63 @@ button:active {
 }
 
 .Character_health_bar[data-health="5"] {
-	display: none;
+	display: block;
 	position: absolute;
-	top: -18px;
+	top: 12px;
 	left: 2px;
 	width: 12px;
 	height: 3px;
-	background: url(images/health5.png) no-repeat no-repeat;
+	background: url(images/healthfive.png) no-repeat no-repeat;
 }
 
 .Character_health_bar[data-health="4"] {
-	display: none;
+	display: block;
 	position: absolute;
-	top: -18px;
+	top: 12px;
 	left: 2px;
 	width: 12px;
 	height: 3px;
-	background: url(images/health4.png) no-repeat no-repeat;
+	background: url(images/healthfour.png) no-repeat no-repeat;
 }
 
 .Character_health_bar[data-health="3"] {
-	display: none;
+	display: block;
 	position: absolute;
-	top: -18px;
+	top: 12px;
 	left: 2px;
 	width: 12px;
 	height: 3px;
-	background: url(images/health3.png) no-repeat no-repeat;
+	background: url(images/healththree.png) no-repeat no-repeat;
 }
 
 .Character_health_bar[data-health="2"] {
-	display: none;
+	display: block;
 	position: absolute;
-	top: -18px;
+	top: 12px;
 	left: 2px;
 	width: 12px;
 	height: 3px;
-	background: url(images/health2.png) no-repeat no-repeat;
+	background: url(images/healthtwo.png) no-repeat no-repeat;
 }
 
 .Character_health_bar[data-health="1"] {
-	display: none;
+	display: block;
 	position: absolute;
-	top: -18px;
+	top: 12px;
 	left: 2px;
 	width: 12px;
 	height: 3px;
-	background: url(images/health1.png) no-repeat no-repeat;
+	background: url(images/healthone.png) no-repeat no-repeat;
 }
 
 .Character_health_bar[data-health="0"] {
-	display: none;
+	display: block;
 	position: absolute;
-	top: -18px;
+	top: 12px;
 	left: 2px;
 	width: 12px;
 	height: 3px;
-	background: url(images/health0.png) no-repeat no-repeat;
+	background: url(images/healthzero.png) no-repeat no-repeat;
 }
 
 .Luck-effect[data-luck="true"] {
