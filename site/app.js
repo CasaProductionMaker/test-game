@@ -256,7 +256,7 @@ function getRandomSafeSpot() {
       playerRef.update({
         coins: players[playerId].coins + 1,
       })
-      if(players[playerId].coins === 20) {
+      if(players[playerId].coins === 60) {
         placePotion();
       }
     }
