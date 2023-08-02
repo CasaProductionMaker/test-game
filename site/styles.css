@@ -198,6 +198,24 @@ button:active {
 	height: 3px;
 	background: url(images/healthzero.png) no-repeat no-repeat;
 }
+.Character_health_bar[data-health="-1"] {
+	display: block;
+	position: absolute;
+	top: 12px;
+	left: 2px;
+	width: 12px;
+	height: 3px;
+	background: url(images/healthzero.png) no-repeat no-repeat;
+}
+.Character_health_bar[data-health="-2"] {
+	display: block;
+	position: absolute;
+	top: 12px;
+	left: 2px;
+	width: 12px;
+	height: 3px;
+	background: url(images/healthzero.png) no-repeat no-repeat;
+}
 
 .Luck-effect[data-luck="true"] {
 	display: block;
@@ -226,6 +244,10 @@ button:active {
 
 .Character[data-weapon="sword"] .Character_sprite {
 	background: url(images/charactersSword.png);
+}
+
+.Character[data-weapon="axe"] .Character_sprite {
+	background: url(images/charactersAxe.png);
 }
 
 .Character[data-direction="right"] .Character_sprite {
@@ -305,6 +327,9 @@ button:active {
 
 .Item[data-type="sword"] .Item_sprite{
 	background: url(images/sword.png) no-repeat no-repeat;
+}
+.Item[data-type="axe"] .Item_sprite{
+	background: url(images/axe.png) no-repeat no-repeat;
 }
 @keyframes itemFloat {
   from { transform: translateY(0) }

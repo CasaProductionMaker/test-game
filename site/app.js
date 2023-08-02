@@ -290,8 +290,11 @@ function getRandomSafeSpot() {
       if(players[playerId].coins === 50) {
         placePotion();
       }
-      if(players[playerId].coins === 60) {
+      if(players[playerId].coins === 70) {
         placeItem("sword");
+      }
+      if(players[playerId].coins === 90) {
+        placeItem("axe");
       }
     }
   }
@@ -367,14 +370,23 @@ function getRandomSafeSpot() {
         {
           damage = randomFromArray([0, 0, 1, 1, 1, 1, 1, 1, 1, 1]);
         }
+        if(players[playerId].weapon == "axe")
+        {
+          damage = randomFromArray([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]);
+        }
         playerToAttackRef.update({
           health: players[playerToAttack].health - damage
         })
         if(players[playerToAttack].health - damage <= -1) {
           playerRef.update({
-            coins: players[playerId].coins + players[playerToAttack].coins, 
-            weapon: players[playerToAttack].weapon
+            coins: players[playerId].coins + players[playerToAttack].coins
           })
+          if(players[playerToAttack].weapon != "none")
+          {
+            playerRef.update({
+              weapon: players[playerToAttack].weapon
+            })
+          }
           playerToAttackRef.update({
             coins: 0, 
             weapon: "none"
@@ -399,14 +411,23 @@ function getRandomSafeSpot() {
         {
           damage = randomFromArray([0, 0, 1, 1, 1, 1, 1, 1, 1, 1]);
         }
+        if(players[playerId].weapon == "axe")
+        {
+          damage = randomFromArray([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]);
+        }
         playerToAttackRef.update({
           health: players[playerToAttack].health - damage
         })
         if(players[playerToAttack].health - damage <= -1) {
           playerRef.update({
-            coins: players[playerId].coins + players[playerToAttack].coins, 
-            weapon: players[playerToAttack].weapon
+            coins: players[playerId].coins + players[playerToAttack].coins
           })
+          if(players[playerToAttack].weapon != "none")
+          {
+            playerRef.update({
+              weapon: players[playerToAttack].weapon
+            })
+          }
           playerToAttackRef.update({
             coins: 0, 
             weapon: "none"
