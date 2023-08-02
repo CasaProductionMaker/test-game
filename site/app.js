@@ -23,12 +23,7 @@ const mapData = {
     "7x4": true,
     "1x11": true,
     "12x10": true,
-    "4x7": true,
-    "5x7": true,
-    "6x7": true,
-    "8x6": true,
-    "9x6": true,
-    "10x6": true,
+    "7x7": true,
     "7x9": true,
     "8x9": true,
     "9x9": true,
@@ -139,12 +134,18 @@ function getRandomSafeSpot() {
   let coinElements = {};
   let potions = {};
   let potionElements = {};
+  let items = {};
+  let itemElements = {};
   let isButton = false;
+  let chatMsg = 0;
 
   const gameContainer = document.querySelector(".game-container");
   const respawnContainer = document.querySelector(".respawn-container");
   const playerNameInput = document.querySelector("#player-name");
   const playerColorButton = document.querySelector("#player-color");
+  const chatSend = document.querySelector("#send-chat");
+  const chatInput = document.querySelector("#chat-input");
+  const chatDisplay = document.querySelector("#chat-display");
 
   function placeCoin() {
     var x = getRandomSafeSpot().x;
@@ -198,6 +199,36 @@ function getRandomSafeSpot() {
     setTimeout(() => {
       placeCoin();
     }, randomFromArray(coinTimeouts));
+  }
+  function placeItem(itemType) {
+    var x = getRandomSafeSpot().x;
+    var y = getRandomSafeSpot().y;
+    if(isSolid(x, y)) {
+      x = getRandomSafeSpot().x;
+      y = getRandomSafeSpot().y;
+    }
+
+    if(isSolid(x, y)) {
+      x = getRandomSafeSpot().x;
+      y = getRandomSafeSpot().y;
+    }
+
+    if(isSolid(x, y)) {
+      x = getRandomSafeSpot().x;
+      y = getRandomSafeSpot().y;
+    }
+
+    const itemRef = firebase.database().ref(`items/${getKeyString(x, y)}`);
+    itemRef.set({
+      x, 
+      y, 
+      type: itemType
+    })
+
+    const itemTimeouts = [40000, 50000, 60000, 70000];
+    setTimeout(() => {
+      placeItem(itemType);
+    }, randomFromArray(itemTimeouts));
   }
   function oneSecondLoop() {
     if(players[playerId] != null) {
@@ -256,8 +287,11 @@ function getRandomSafeSpot() {
       playerRef.update({
         coins: players[playerId].coins + 1,
       })
-      if(players[playerId].coins === 60) {
+      if(players[playerId].coins === 50) {
         placePotion();
+      }
+      if(players[playerId].coins === 60) {
+        placeItem("sword");
       }
     }
   }
@@ -284,6 +318,16 @@ function getRandomSafeSpot() {
       })
     }
   }
+  function attemptGrabItem(x, y) {
+    const key = getKeyString(x, y);
+    if (items[key]) {
+      // Remove this key from data, then uptick Player's coin count
+      playerRef.update({
+        weapon: items[key].type
+      })
+      firebase.database().ref(`items/${key}`).remove();
+    }
+  }
   function handleArrowPress(xChange=0, yChange=0) {
     const newX = players[playerId].x + xChange;
     const newY = players[playerId].y + yChange;
@@ -300,6 +344,7 @@ function getRandomSafeSpot() {
       playerRef.set(players[playerId]);
       attemptGrabCoin(newX, newY);
       attemptDrinkPotion(newX, newY);
+      attemptGrabItem(newX, newY);
     }
   }
   function handleAttack() {
@@ -315,18 +360,24 @@ function getRandomSafeSpot() {
           playerToAttack = key;
         }
       })
-      if(playerToAttack != null && !players[playerId].isDead) {
+      if(playerToAttack != null && !players[playerId].isDead && !players[playerToAttack].isDead) {
         playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
         var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+        if(players[playerId].weapon == "sword")
+        {
+          damage = randomFromArray([0, 0, 1, 1, 1, 1, 1, 1, 1, 1]);
+        }
         playerToAttackRef.update({
           health: players[playerToAttack].health - damage
         })
         if(players[playerToAttack].health - damage <= -1) {
           playerRef.update({
-            coins: players[playerId].coins + players[playerToAttack].coins
+            coins: players[playerId].coins + players[playerToAttack].coins, 
+            weapon: players[playerToAttack].weapon
           })
           playerToAttackRef.update({
-            coins: 0
+            coins: 0, 
+            weapon: "none"
           })
         }
       }
@@ -341,25 +392,28 @@ function getRandomSafeSpot() {
           playerToAttack = key;
         }
       })
-      if(playerToAttack != null && !players[playerId].isDead) {
+      if(playerToAttack != null && !players[playerId].isDead && !players[playerToAttack].isDead) {
         playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
         var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+        if(players[playerId].weapon == "sword")
+        {
+          damage = randomFromArray([0, 0, 1, 1, 1, 1, 1, 1, 1, 1]);
+        }
         playerToAttackRef.update({
           health: players[playerToAttack].health - damage
         })
         if(players[playerToAttack].health - damage <= -1) {
           playerRef.update({
-            coins: players[playerId].coins + players[playerToAttack].coins
+            coins: players[playerId].coins + players[playerToAttack].coins, 
+            weapon: players[playerToAttack].weapon
           })
           playerToAttackRef.update({
-            coins: 0
+            coins: 0, 
+            weapon: "none"
           })
         }
       }
     }
-  }
-  function Respawn() {
-    console.log("respawn");
   }
 
   function initGame() {
@@ -373,6 +427,7 @@ function getRandomSafeSpot() {
     const allPlayersRef = firebase.database().ref(`players`);
     const allCoinsRef = firebase.database().ref(`coins`);
     const allPotionsRef = firebase.database().ref(`potions`);
+    const allItemsRef = firebase.database().ref(`items`);
 
     allPlayersRef.on("value", (snapshot) => {
       //change
@@ -384,6 +439,7 @@ function getRandomSafeSpot() {
         el.querySelector(".Character_coins").innerText = characterState.coins;
         el.setAttribute("data-color", characterState.color);
         el.setAttribute("data-direction", characterState.direction);
+        el.setAttribute("data-weapon", characterState.weapon);
         var luckState = "false";
         if(characterState.potionDuration > 0) {
           luckState = "true";
@@ -422,6 +478,7 @@ function getRandomSafeSpot() {
       characterElement.querySelector(".Character_coins").innerText = addedPlayer.coins;
       characterElement.setAttribute("data-color", addedPlayer.color);
       characterElement.setAttribute("data-direction", addedPlayer.direction);
+      characterElement.setAttribute("data-weapon", addedPlayer.weapon);
       const left = 16 * addedPlayer.x + "px";
       const top = 16 * addedPlayer.y - 4 + "px";
       characterElement.style.transform = `translate3d(${left}, ${top}, 0)`;
@@ -497,8 +554,48 @@ function getRandomSafeSpot() {
       delete potionElements[keyToRemove];
     })
 
+    allItemsRef.on("value", (snapshot) => {
+      items = snapshot.val() || {};
+    });
+    allItemsRef.on("child_added", (snapshot) => {
+      const item = snapshot.val();
+      const key = getKeyString(item.x, item.y);
+      items[key] = true;
+
+      // Create the DOM Element
+      const itemElement = document.createElement("div");
+      itemElement.classList.add("Item", "grid-cell");
+      itemElement.innerHTML = `
+        <div class="Coin_shadow grid-cell"></div>
+        <div class="Item_sprite grid-cell"></div>
+      `;
+
+      // Position the Element
+      const left = 16 * item.x + "px";
+      const top = 16 * item.y - 4 + "px";
+      itemElement.style.transform = `translate3d(${left}, ${top}, 0)`;
+      itemElement.setAttribute("data-type", item.type);
+
+      // Keep a reference for removal later and add to DOM
+      itemElements[key] = itemElement;
+      gameContainer.appendChild(itemElement);
+    })
+    allItemsRef.on("child_removed", (snapshot) => {
+      const {x, y} = snapshot.val();
+      const keyToRemove = getKeyString(x, y);
+      gameContainer.removeChild(itemElements[keyToRemove]);
+      delete itemElements[keyToRemove];
+    })
+
     playerNameInput.addEventListener("change", (e) => {
       const newName = e.target.value || createName();
+      const chatRef = firebase.database().ref(`chat/` + Math.floor(Math.random() * 1000000000000000));
+      const date = new Date();
+      chatRef.set({
+        message: players[playerId].name + " has renamed to " + newName, 
+        time: date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds(), 
+        day:  date.getDay()
+      })
       playerNameInput.value = newName;
       playerRef.update({
         name: newName
@@ -511,11 +608,38 @@ function getRandomSafeSpot() {
         color: nextColor
       });
     })
+    chatSend.addEventListener("click", () => {
+      const chatRef = firebase.database().ref(`chat/` + Math.floor(Math.random() * 1000000000000000));
+      const date = new Date();
+      var inputMessage = chatInput.value;
+      chatRef.set({
+        message: inputMessage + " | " + players[playerId].name, 
+        time: date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds(), 
+        day: date.getDay()
+      })
+      chatInput.value = "";
+
+    })
+    const chatRef = firebase.database().ref(`chat`);
+
+    chatRef.on("child_added", (snapshot) => {
+      //new nodes
+      const addedMessage = snapshot.val();
+      const date = new Date();
+      if(addedMessage.time >= date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds() && addedMessage.day == date.getDay())
+      {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("Chat-message");
+        messageElement.innerHTML = addedMessage.message;
+
+        chatDisplay.appendChild(messageElement);
+      }
+    })
+
     placeCoin();
     oneSecondLoop();
     tickLoop();
   }
-
 	firebase.auth().onAuthStateChanged((user) => {
     console.log(user)
     if (user) {
@@ -540,6 +664,16 @@ function getRandomSafeSpot() {
         potionDuration: 0,
         health: 5, 
         isDead: false, 
+        weapon: "none", 
+      })
+
+      const date = new Date();
+
+      const chatRef = firebase.database().ref(`chat/` + Math.floor(Math.random() * 1000000000000000));
+      chatRef.set({
+        message: name + " has joined the game", 
+        time: date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds(), 
+        day: date.getDay()
       })
 
       //Remove me from Firebase when I diconnect

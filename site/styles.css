@@ -28,6 +28,10 @@ html, body {
 	justify-content: center;
 }
 
+#respawn {
+	text-align: center;
+}
+
 .player-info {
 	position: absolute;
 	top: 0;
@@ -36,6 +40,21 @@ html, body {
 	display: flex;
 	gap: 0.5em;
 	align-items: flex-end;
+}
+
+.chat-box {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	padding: 1em;
+	display: flex;
+	gap: 0.5em;
+	align-items: flex-end;
+}
+
+.chat-message {
+	position: relative;
+	bottom: 300px;
 }
 
 label {
@@ -77,6 +96,17 @@ button {
 button:active {
 	position: relative;
 	top: 1px;
+}
+
+#chat-display {
+	text-align: right;
+	align-self: right;
+	right: 0px;
+	font-weight: bold;
+	position: relative;
+	bottom: 70px;
+	left: 210px;
+	overflow: hidden;
 }
 
 /* Characters */
@@ -194,6 +224,10 @@ button:active {
 	background: url(images/characters.png);
 }
 
+.Character[data-weapon="sword"] .Character_sprite {
+	background: url(images/charactersSword.png);
+}
+
 .Character[data-direction="right"] .Character_sprite {
   background-position-x: 16px;
 }
@@ -261,4 +295,18 @@ button:active {
 }
 .Potion_shadow {
 	background: url(images/coin-shadow.png) no-repeat no-repeat;
+}
+
+/* Items */
+
+.Item_sprite {
+	animation: itemFloat 0.9s linear infinite alternate-reverse;
+}
+
+.Item[data-type="sword"] .Item_sprite{
+	background: url(images/sword.png) no-repeat no-repeat;
+}
+@keyframes itemFloat {
+  from { transform: translateY(0) }
+  to { transform: translateY(2px) }
 }

@@ -12,10 +12,21 @@
 		<div class="player-info">
 			<div>
 				<label for="player-name">Your Name</label>
-				<input id="player-name" maxlength="16" type="text" />
+				<input id="player-name" maxlength="16" type="text"/>
 			</div>
 			<div>
         		<button id="player-color">Change Color</button>
+    		</div>
+		</div>
+		<div class="chat-box">
+			<div id="chat-display">
+    		</div>
+			<div>
+				<label for="chat-input">Chat</label>
+				<input id="chat-input" maxlength="32" type="text" style="text-transform: none;"/>
+			</div>
+			<div>
+        		<button id="send-chat">Send</button>
     		</div>
 		</div>
 		<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
