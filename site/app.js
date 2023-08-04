@@ -1,4 +1,3 @@
-
 //import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
 
 const firebaseConfig = {
@@ -115,7 +114,6 @@ function getRandomSafeSpot() {
     { x: 13, y: 6 },
     { x: 13, y: 8 },
     { x: 7, y: 6 },
-    { x: 7, y: 7 },
     { x: 7, y: 8 },
     { x: 8, y: 8 },
     { x: 10, y: 8 },
@@ -358,7 +356,7 @@ function getRandomSafeSpot() {
       let playerToAttack;
       Object.keys(players).forEach((key) => {
         const characterState = players[key];
-        if(characterState.x === attackX)
+        if(characterState.x === attackX && characterState.y === players[playerId].y)
         {
           playerToAttack = key;
         }
@@ -399,7 +397,7 @@ function getRandomSafeSpot() {
       let playerToAttack;
       Object.keys(players).forEach((key) => {
         const characterState = players[key];
-        if(characterState.x === attackX)
+        if(characterState.x === attackX && characterState.y === players[playerId].y)
         {
           playerToAttack = key;
         }
