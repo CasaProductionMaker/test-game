@@ -1,3 +1,5 @@
+/* General */
+
 * {
 	box-sizing: border-box;
 }
@@ -13,14 +15,23 @@ html, body {
 	justify-content: center;
 }
 
+/* Game Container */
+
 .game-container {
 	position: relative;
 	width: 240px;
 	height: 208px;
-	background: url(images/map.png) no-repeat no-repeat;
 	transform: scale(3);
 	image-rendering: pixelated;
 }
+.game-container[data-map="Lobby"] {
+	background: url(images/map.png) no-repeat no-repeat;
+}
+.game-container[data-map="Shop"] {
+	background: url(images/shop.png) no-repeat no-repeat;
+}
+
+/* Respawn */
 
 .respawn-container {
 	z-index: 2;
@@ -32,6 +43,8 @@ html, body {
 	text-align: center;
 }
 
+/* Player Customization */
+
 .player-info {
 	position: absolute;
 	top: 0;
@@ -41,6 +54,8 @@ html, body {
 	gap: 0.5em;
 	align-items: flex-end;
 }
+
+/* Chat */
 
 .chat-box {
 	position: absolute;
@@ -56,6 +71,8 @@ html, body {
 	position: relative;
 	bottom: 300px;
 }
+
+/* More General */
 
 label {
 	display: block;
@@ -93,10 +110,12 @@ button {
 	cursor: pointer;
 }
 
-button:active {
+button:active:not(#exit-button) {
 	position: relative;
 	top: 1px;
 }
+
+/* More Chat */
 
 #chat-display {
 	text-align: right;
@@ -107,6 +126,58 @@ button:active {
 	bottom: 70px;
 	left: 210px;
 	overflow: hidden;
+}
+
+/* Dialogue */
+
+.dialogue-container {
+	z-index: 5;
+	position: absolute;
+	bottom: 5px;
+	background: #00000000;
+}
+.dialogue-container[data-show="true"] {
+	z-index: 5;
+	position: absolute;
+	bottom: 5px;
+	background: #3d3d3d7d;
+}
+
+#dialogue-text {
+	display: inline-block;
+	position: relative;
+	bottom: 50%;
+}
+
+#first-button, #second-button, #exit-button {
+	display: none;
+	height: 2em;
+}
+
+#exit-button {
+	background: #ff3021;
+	border-bottom: 2px solid #d9291c;
+	height: 1.5em;
+	position: relative;
+	top: -50px;
+	left: 10px;
+}
+
+button#exit-button:active {
+	position: relative;
+	top: -49px;
+}
+
+#exit-button[data-show="true"] {
+	display: inline-block;
+}
+#option-container {
+	display: inline-block;
+	margin: 0.4em;
+}
+#first-button[data-show="true"], #second-button[data-show="true"] {
+	display: block;
+	margin: 0.1em;
 }
 
 /* Characters */
@@ -216,6 +287,9 @@ button:active {
 	height: 3px;
 	background: url(images/healthzero.png) no-repeat no-repeat;
 }
+.Character_health_bar[data-location="none"] {
+	background: url(images/none.png);
+}
 
 .Luck-effect[data-luck="true"] {
 	display: block;
@@ -250,6 +324,10 @@ button:active {
 	background: url(images/charactersAxe.png);
 }
 
+.Character[data-location="none"] .Character_sprite {
+	background: url(images/charactersNone.png);
+}
+
 .Character[data-direction="right"] .Character_sprite {
   background-position-x: 16px;
 }
@@ -271,6 +349,9 @@ button:active {
 .Character_shadow {
 	background: url(images/shadow.png);
 }
+.Character_shadow[data-location="none"] {
+	background: url(images/none.png);
+}
 
 .Character_name-container {
   position: absolute;
@@ -286,9 +367,21 @@ button:active {
   white-space: nowrap;
   align-items: center;
 }
+.Character_name-container[data-location="none"] {
+  background: #00000000;
+}
+.Character_name {
+  color: white;
+}
+.Character_name[data-location="none"] {
+  color: #00000000;
+}
 .Character_coins {
   margin-left: 1px;
   color: gold;
+}
+.Character_coins[data-location="none"] {
+  color: #00000000;
 }
 
 /* Coins */
@@ -297,12 +390,20 @@ button:active {
 	background: url(images/coin.png) no-repeat no-repeat;
 	animation: coinFloat 0.8s linear infinite alternate-reverse;
 }
+
+.Coin_sprite[data-location="none"] {
+  background: url(images/none.png) no-repeat no-repeat;
+}
 @keyframes coinFloat {
   from { transform: translateY(0) }
   to { transform: translateY(5px) }
 }
 .Coin_shadow {
 	background: url(images/coin-shadow.png) no-repeat no-repeat;
+}
+
+.Coin_shadow[data-location="none"] {
+  background: url(images/none.png) no-repeat no-repeat;
 }
 
 /* Potion */

@@ -1,5 +1,4 @@
 //import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyDBKwQRTu3xsHZjuzW3TFZFdHlGwbhttqY",
   authDomain: "test-game-eba29.firebaseapp.com",
@@ -13,20 +12,86 @@ const firebaseConfig = {
 const app = firebase.initializeApp(firebaseConfig);
 
 //My code
-const mapData = {
+let myLocation = "Lobby";
+
+const lobbyMapData = {
   minX: 1,
   maxX: 14,
-  minY: 4,
+  minY: 3,
   maxY: 12,
   blockedSpaces: {
     "7x4": true,
     "1x11": true,
     "12x10": true,
-    "7x7": true,
     "7x9": true,
-    "8x9": true,
     "9x9": true,
-  },
+    "1x3": true,
+    "2x3": true,
+    "4x3": true,
+    "5x3": true,
+    "6x3": true,
+    "7x3": true,
+    "8x3": true,
+    "9x3": true,
+    "10x3": true,
+    "11x3": true,
+    "12x3": true,
+    "13x3": true,
+    "7x7": true
+  }, 
+  portals: {
+    "8x9": "Graveyard", 
+    "3x3": "Shop"
+  }, 
+  portalBlocked: {
+    "8x9": true, 
+    "3x3": true
+  }
+};
+
+const shopMapData = {
+  minX: 2,
+  maxX: 13,
+  minY: 2,
+  maxY: 12,
+  blockedSpaces: {
+    "2x11": true, 
+    "3x11": true, 
+    "4x11": true, 
+    "5x11": true, 
+    "6x11": true, 
+    "8x11": true, 
+    "9x11": true, 
+    "10x11": true, 
+    "11x11": true, 
+    "12x11": true, 
+    "2x7": true, 
+    "2x8": true, 
+    "3x5": true, 
+    "3x6": true, 
+    "4x8": true, 
+    "4x9": true, 
+    "10x7": true, 
+    "10x8": true, 
+    "12x6": true, 
+    "12x7": true, 
+    "4x2": true, 
+    "4x3": true, 
+    "5x3": true, 
+    "6x3": true, 
+    "7x3": true, 
+    "8x3": true, 
+    "8x2": true,  
+    "10x4": true, 
+    "11x4": true
+  }, 
+  portals: {
+    "7x11": "Lobby"
+  }, 
+  portalBlocked: {
+    "7x11": true
+  }
+  //shopkeeper at 6x3
 };
 
 const playerColors = ["blue", "red", "orange", "yellow", "green", "purple"];
@@ -43,7 +108,6 @@ function createName() {
     "SUPER",
     "HIP",
     "SMUG",
-    "COOL",
     "SILKY",
     "GOOD",
     "SAFE",
@@ -60,6 +124,7 @@ function createName() {
     "GODLY",
     "OP",
     "POOR",
+    "THE",
   ]);
   const animal = randomFromArray([
     "BEAR",
@@ -84,7 +149,20 @@ function createName() {
   ]);
   return `${prefix} ${animal}`;
 }
+function getCurrentMapData() {
+  let mapData;
+  if(myLocation == "Lobby")
+  {
+    mapData = lobbyMapData;
+  }
+  if(myLocation == "Shop")
+  {
+    mapData = shopMapData;
+  }
+  return mapData;
+}
 function isSolid(x, y) {
+  const mapData = getCurrentMapData();
   const blockedNextSpace = mapData.blockedSpaces[getKeyString(x, y)];
   return (
     blockedNextSpace || 
@@ -94,32 +172,26 @@ function isSolid(x, y) {
     y < mapData.minY
   )
 }
+function isPortal(x, y) {
+  const mapData = getCurrentMapData();
+  const blockedNextSpace = mapData.portalBlocked[getKeyString(x, y)];
+  return (
+    blockedNextSpace || 
+    x >= mapData.maxX || 
+    x < mapData.minX || 
+    y >= mapData.maxY || 
+    y < mapData.minY
+  )
+}
 function getRandomSafeSpot() {
-  //We don't look things up by key here, so just return an x/y
-  return randomFromArray([
-    { x: 1, y: 4 },
-    { x: 2, y: 4 },
-    { x: 1, y: 5 },
-    { x: 2, y: 6 },
-    { x: 2, y: 8 },
-    { x: 2, y: 9 },
-    { x: 4, y: 8 },
-    { x: 5, y: 5 },
-    { x: 5, y: 8 },
-    { x: 5, y: 10 },
-    { x: 5, y: 11 },
-    { x: 11, y: 7 },
-    { x: 12, y: 7 },
-    { x: 13, y: 7 },
-    { x: 13, y: 6 },
-    { x: 13, y: 8 },
-    { x: 7, y: 6 },
-    { x: 7, y: 8 },
-    { x: 8, y: 8 },
-    { x: 10, y: 8 },
-    { x: 8, y: 8 },
-    { x: 11, y: 4 },
-  ]);
+  let x = Math.floor(Math.random() * 13);
+  let y = Math.floor(Math.random() * 11);
+  while(isSolid(x, y) || isPortal(x, y))
+  {
+    x = Math.floor(Math.random() * 13);
+    y = Math.floor(Math.random() * 11);
+  }
+  return {x, y};
 }
 
 (function() {
@@ -128,6 +200,8 @@ function getRandomSafeSpot() {
 	let playerRef;
   let players = {};
   let playerElements = {};
+  let npcs = {};
+  let npcElements = {};
   let coins = {};
   let coinElements = {};
   let potions = {};
@@ -144,6 +218,9 @@ function getRandomSafeSpot() {
   const chatSend = document.querySelector("#send-chat");
   const chatInput = document.querySelector("#chat-input");
   const chatDisplay = document.querySelector("#chat-display");
+  const dialogueDisplay = document.querySelector(".dialogue-container");
+
+  gameContainer.setAttribute("data-map", "Lobby");
 
   function placeCoin() {
     var x = getRandomSafeSpot().x;
@@ -186,12 +263,15 @@ function getRandomSafeSpot() {
       y = getRandomSafeSpot().y;
     }
     console.log(isSolid(x, y));
-
-    const coinRef = firebase.database().ref(`coins/${getKeyString(x, y)}`);
-    coinRef.set({
-      x, 
-      y
-    })
+    if(myLocation == "Lobby")
+    {
+      const coinRef = firebase.database().ref(`coins/${getKeyString(x, y)}`);
+      coinRef.set({
+        x, 
+        y, 
+        location: myLocation
+      })
+    }
 
     const coinTimeouts = [4000, 5000, 6000, 7000];
     setTimeout(() => {
@@ -258,6 +338,7 @@ function getRandomSafeSpot() {
         isButton = true;
       }
     }
+
     //repeat
     setTimeout(() => {
       oneSecondLoop();
@@ -270,6 +351,17 @@ function getRandomSafeSpot() {
           isDead: true
         })
       }
+      playerRef.update({
+        location: myLocation
+      })
+    }
+
+    let i = 0;
+    for (let x in coinElements)
+    {
+      coinElements[x].querySelector(".Coin_sprite").setAttribute("data-location", coins[x].location == myLocation ? "some" : "none");
+      coinElements[x].querySelector(".Coin_shadow").setAttribute("data-location", coins[x].location == myLocation ? "some" : "none");
+      i++;
     }
 
     //repeat
@@ -280,19 +372,22 @@ function getRandomSafeSpot() {
   function attemptGrabCoin(x, y) {
     const key = getKeyString(x, y);
     if (coins[key]) {
-      // Remove this key from data, then uptick Player's coin count
-      firebase.database().ref(`coins/${key}`).remove();
-      playerRef.update({
-        coins: players[playerId].coins + 1,
-      })
-      if(players[playerId].coins === 50) {
-        placePotion();
-      }
-      if(players[playerId].coins === 70) {
-        placeItem("sword");
-      }
-      if(players[playerId].coins === 90) {
-        placeItem("axe");
+      if(coins[key].location == myLocation)
+      {
+        // Remove this key from data, then uptick Player's coin count
+        firebase.database().ref(`coins/${key}`).remove();
+        playerRef.update({
+          coins: players[playerId].coins + 1,
+        })
+        if(players[playerId].coins === 50) {
+          placePotion();
+        }
+        if(players[playerId].coins === 70) {
+          placeItem("sword");
+        }
+        if(players[playerId].coins === 90) {
+          placeItem("axe");
+        }
       }
     }
   }
@@ -332,6 +427,8 @@ function getRandomSafeSpot() {
   function handleArrowPress(xChange=0, yChange=0) {
     const newX = players[playerId].x + xChange;
     const newY = players[playerId].y + yChange;
+    const oldX = players[playerId].x;
+    const oldY = players[playerId].y;
     if (!isSolid(newX, newY) && !players[playerId].isDead) {
       //move to the next space
       players[playerId].x = newX;
@@ -341,6 +438,33 @@ function getRandomSafeSpot() {
       }
       if (xChange === -1) {
         players[playerId].direction = "left";
+      }
+      const mapData = getCurrentMapData();
+      if(mapData.portals[getKeyString(newX, newY)])
+      {
+        const portalToEnter = mapData.portals[getKeyString(newX, newY)];
+        if(portalToEnter == "Shop")
+        {
+          players[playerId].x = 7;
+          players[playerId].y = 11;
+        }
+        if(portalToEnter == "Lobby" && myLocation == "Shop")
+        {
+          players[playerId].x = 3;
+          players[playerId].y = 3;
+        }
+        myLocation = portalToEnter;
+        gameContainer.setAttribute("data-map", myLocation);
+      }
+      if(myLocation == "Shop" && getKeyString(newX, newY) == "6x4")
+      {
+        //Talk to shopkeeper
+        OpenDialogue("Hello there, I am the shopkeeper.", "Buy Sword for 40 coins", null);
+      }
+      if(myLocation == "Shop" && getKeyString(oldX, oldY) == "6x4")
+      {
+        //End talk to shopkeeper
+        CloseDialogue();
       }
       playerRef.set(players[playerId]);
       attemptGrabCoin(newX, newY);
@@ -372,9 +496,12 @@ function getRandomSafeSpot() {
         {
           damage = randomFromArray([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]);
         }
-        playerToAttackRef.update({
-          health: players[playerToAttack].health - damage
-        })
+        if(players[playerId].location == players[playerToAttack].location)
+        {
+          playerToAttackRef.update({
+            health: players[playerToAttack].health - damage
+          })
+        }
         if(players[playerToAttack].health - damage <= -1) {
           playerRef.update({
             coins: players[playerId].coins + players[playerToAttack].coins
@@ -413,9 +540,12 @@ function getRandomSafeSpot() {
         {
           damage = randomFromArray([1, 1, 1, 1, 1, 1, 1, 1, 1, 2]);
         }
-        playerToAttackRef.update({
-          health: players[playerToAttack].health - damage
-        })
+        if(players[playerId].location == players[playerToAttack].location)
+        {
+          playerToAttackRef.update({
+            health: players[playerToAttack].health - damage
+          })
+        }
         if(players[playerToAttack].health - damage <= -1) {
           playerRef.update({
             coins: players[playerId].coins + players[playerToAttack].coins
@@ -433,6 +563,47 @@ function getRandomSafeSpot() {
         }
       }
     }
+  }
+  function OpenDialogue(message, buttonone, buttontwo) {
+    //open a dialogue
+    dialogueDisplay.querySelector("#dialogue-text").innerText = message;
+    dialogueDisplay.querySelector("#first-button").innerText = buttonone;
+    dialogueDisplay.querySelector("#second-button").innerText = buttontwo;
+    dialogueDisplay.querySelector("#first-button").setAttribute("data-show", "true");
+    dialogueDisplay.querySelector("#second-button").setAttribute("data-show", "true");
+    if(buttonone == null)
+    {
+      dialogueDisplay.querySelector("#first-button").setAttribute("data-show", "false");
+      dialogueDisplay.querySelector("#second-button").setAttribute("data-show", "false");
+    }
+    if(buttontwo == null)
+    {
+      dialogueDisplay.querySelector("#second-button").setAttribute("data-show", "false");
+    }
+    dialogueDisplay.querySelector("#exit-button").setAttribute("data-show", "true");
+    dialogueDisplay.setAttribute("data-show", "true");
+    dialogueDisplay.querySelector("#exit-button").addEventListener("click", () => {
+      CloseDialogue();
+    })
+    dialogueDisplay.querySelector("#first-button").addEventListener("click", () => {
+      if(players[playerId].coins >= 40)
+      {
+        playerRef.update({
+          coins: players[playerId].coins - 40, 
+          weapon: "sword"
+        })
+      }
+    })
+  }
+  function CloseDialogue() {
+    //open a dialogue
+    dialogueDisplay.querySelector("#dialogue-text").innerText = "";
+    dialogueDisplay.querySelector("#first-button").innerText = "";
+    dialogueDisplay.querySelector("#second-button").innerText = "";
+    dialogueDisplay.querySelector("#first-button").setAttribute("data-show", "false");
+    dialogueDisplay.querySelector("#second-button").setAttribute("data-show", "false");
+    dialogueDisplay.querySelector("#exit-button").setAttribute("data-show", "false");
+    dialogueDisplay.setAttribute("data-show", "false");
   }
 
   function initGame() {
@@ -459,12 +630,18 @@ function getRandomSafeSpot() {
         el.setAttribute("data-color", characterState.color);
         el.setAttribute("data-direction", characterState.direction);
         el.setAttribute("data-weapon", characterState.weapon);
+        el.setAttribute("data-location", characterState.location == myLocation ? "some" : "none");
         var luckState = "false";
         if(characterState.potionDuration > 0) {
           luckState = "true";
         }
         el.querySelector(".Luck-effect").setAttribute("data-luck", luckState);
         el.querySelector(".Character_health_bar").setAttribute("data-health", characterState.health);
+        el.querySelector(".Character_name").setAttribute("data-location", characterState.location == myLocation ? "some" : "none");
+        el.querySelector(".Character_coins").setAttribute("data-location", characterState.location == myLocation ? "some" : "none");
+        el.querySelector(".Character_name-container").setAttribute("data-location", characterState.location == myLocation ? "some" : "none");
+        el.querySelector(".Character_shadow").setAttribute("data-location", characterState.location == myLocation ? "some" : "none");
+        el.querySelector(".Character_health_bar").setAttribute("data-location", characterState.location == myLocation ? "some" : "none");
         const left = 16 * characterState.x + "px";
         const top = 16 * characterState.y - 4 + "px";
         el.style.transform = `translate3d(${left}, ${top}, 0)`;
@@ -524,6 +701,9 @@ function getRandomSafeSpot() {
         <div class="Coin_shadow grid-cell"></div>
         <div class="Coin_sprite grid-cell"></div>
       `;
+
+      //coinElement.querySelector(".Coin_sprite").setAttribute("data-location", players[playerId].location == myLocation ? "some" : "none");
+      //coinElement.querySelector(".Coin_shadow").setAttribute("data-location", players[playerId].location == myLocation ? "some" : "none");
 
       // Position the Element
       const left = 16 * coin.x + "px";
@@ -613,7 +793,7 @@ function getRandomSafeSpot() {
       chatRef.set({
         message: players[playerId].name + " has renamed to " + newName, 
         time: date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds(), 
-        day:  date.getDay()
+        day:  date.getDate()
       })
       playerNameInput.value = newName;
       playerRef.update({
@@ -634,7 +814,7 @@ function getRandomSafeSpot() {
       chatRef.set({
         message: inputMessage + " | " + players[playerId].name, 
         time: date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds(), 
-        day: date.getDay()
+        day: date.getDate()
       })
       chatInput.value = "";
 
@@ -645,8 +825,9 @@ function getRandomSafeSpot() {
       //new nodes
       const addedMessage = snapshot.val();
       const date = new Date();
-      if(addedMessage.time >= date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds() && addedMessage.day == date.getDay())
+      if(addedMessage.time >= date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds() && addedMessage.day == date.getDate())
       {
+        console.log(date.getDate());
         const messageElement = document.createElement("div");
         messageElement.classList.add("Chat-message");
         messageElement.innerHTML = addedMessage.message;
@@ -659,7 +840,7 @@ function getRandomSafeSpot() {
     oneSecondLoop();
     tickLoop();
   }
-	firebase.auth().onAuthStateChanged((user) => {
+	firebase.auth().onAuthStateChanged((user) =>{
     console.log(user)
     if (user) {
       //You're logged in!
@@ -684,6 +865,7 @@ function getRandomSafeSpot() {
         health: 5, 
         isDead: false, 
         weapon: "none", 
+        location: myLocation, 
       })
 
       const date = new Date();
@@ -692,7 +874,7 @@ function getRandomSafeSpot() {
       chatRef.set({
         message: name + " has joined the game", 
         time: date.getHours() * 10000 + date.getMinutes() * 100 + date.getSeconds(), 
-        day: date.getDay()
+        day: date.getDate()
       })
 
       //Remove me from Firebase when I diconnect
