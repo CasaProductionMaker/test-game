@@ -13,6 +13,7 @@ const app = firebase.initializeApp(firebaseConfig);
 
 //My code
 let myLocation = "Lobby";
+let myDurability = 0;
 
 const lobbyMapData = {
   minX: 1,
@@ -48,7 +49,6 @@ const lobbyMapData = {
     "3x3": true
   }
 };
-
 const shopMapData = {
   minX: 2,
   maxX: 13,
@@ -200,8 +200,6 @@ function getRandomSafeSpot() {
 	let playerRef;
   let players = {};
   let playerElements = {};
-  let npcs = {};
-  let npcElements = {};
   let coins = {};
   let coinElements = {};
   let potions = {};
@@ -219,9 +217,20 @@ function getRandomSafeSpot() {
   const chatInput = document.querySelector("#chat-input");
   const chatDisplay = document.querySelector("#chat-display");
   const dialogueDisplay = document.querySelector(".dialogue-container");
+  const durDisplay = document.querySelector(".player-dur-info");
 
   gameContainer.setAttribute("data-map", "Lobby");
 
+  function repairTool() {
+    if(players[playerId].coins > 20)
+    {
+      myDurability = 50;
+      durDisplay.innerText = "Current Durability: " + myDurability;
+      firebase.database().ref("players/" + playerId).update({
+        coins: players[playerId].coins - 20
+      });
+    }
+  }
   function placeCoin() {
     var x = getRandomSafeSpot().x;
     var y = getRandomSafeSpot().y;
@@ -324,6 +333,8 @@ function getRandomSafeSpot() {
         const respawnButton = buttonElement.querySelector("#respawn");
         respawnButton.addEventListener("click", () => {
           isButton = false;
+          myLocation = "Lobby";
+          gameContainer.setAttribute("data-map", myLocation);
           respawnContainer.querySelector(".respawnButton").remove();
           const {x, y} = getRandomSafeSpot();
           playerRef.update({
@@ -331,7 +342,8 @@ function getRandomSafeSpot() {
             coins: 0, 
             health: 5, 
             x, 
-            y
+            y, 
+            location: "Lobby"
           })
         })
         respawnContainer.appendChild(buttonElement);
@@ -421,6 +433,8 @@ function getRandomSafeSpot() {
       playerRef.update({
         weapon: items[key].type
       })
+      myDurability = items[key].type == "sword" ? 50 : 70;
+      durDisplay.innerText = "Current Durability: " + myDurability;
       firebase.database().ref(`items/${key}`).remove();
     }
   }
@@ -439,6 +453,10 @@ function getRandomSafeSpot() {
       if (xChange === -1) {
         players[playerId].direction = "left";
       }
+      playerRef.set(players[playerId]);
+      attemptGrabCoin(newX, newY);
+      attemptDrinkPotion(newX, newY);
+      attemptGrabItem(newX, newY);
       const mapData = getCurrentMapData();
       if(mapData.portals[getKeyString(newX, newY)])
       {
@@ -459,7 +477,63 @@ function getRandomSafeSpot() {
       if(myLocation == "Shop" && getKeyString(newX, newY) == "6x4")
       {
         //Talk to shopkeeper
-        OpenDialogue("Hello there, I am the shopkeeper.", "Buy Sword for 40 coins", null);
+        if(myDurability < 10)
+        {
+          OpenDialogue(
+            "Hello there, I am the shopkeeper.", 
+            "Ok", 
+            null, 
+            "dialogue", 
+            null, 
+            () => OpenDialogue(
+              "I have a great deal for you.", 
+              "What is it?", 
+              "No thanks, Bye.", 
+              "dialogue", 
+              "dialogue", 
+              () => OpenDialogue(
+                "I see your weapon there is about to break. I can repair that for you. It'll cost you 20 coins", 
+                "Ok, sure", 
+                "Nope", 
+                "dialogue", 
+                "dialogue", 
+                () => repairTool(), 
+                () => CloseDialogue()
+              ), 
+              () => CloseDialogue()
+            ), 
+            null
+          );
+        } else {
+          OpenDialogue(
+            "Hello there, I am the shopkeeper.", 
+            "Ok", 
+            null, 
+            "dialogue", 
+            null, 
+            () => OpenDialogue(
+              "Are you gonna buy something or are you just wasting my time?!", 
+              "I'll buy something", 
+              "Just wasting your time.", 
+              "dialogue", 
+              "dialogue", 
+              () => OpenDialogue(
+                "I can sell this sword for 40 coins", 
+                "Buy", 
+                null, 
+                "item", 
+                null, 
+                {
+                  "item": "sword", 
+                  "price": 40
+                }, 
+                null
+              ), 
+              () => CloseDialogue()
+            ), 
+            null
+          );
+        }
       }
       if(myLocation == "Shop" && getKeyString(oldX, oldY) == "6x4")
       {
@@ -467,13 +541,18 @@ function getRandomSafeSpot() {
         CloseDialogue();
       }
       playerRef.set(players[playerId]);
-      attemptGrabCoin(newX, newY);
-      attemptDrinkPotion(newX, newY);
-      attemptGrabItem(newX, newY);
     }
   }
   function handleAttack() {
     var attackX;
+    myDurability--;
+        if(myDurability < 0)
+        {
+          myDurability = 0;
+          firebase.database().ref("players/" + playerId).update({
+            weapon: "none"
+          })
+        }
     if(players[playerId].direction === "right") {
       //right
       attackX = players[playerId].x + 1;
@@ -486,6 +565,14 @@ function getRandomSafeSpot() {
         }
       })
       if(playerToAttack != null && !players[playerId].isDead && !players[playerToAttack].isDead) {
+        myDurability--;
+        if(myDurability < 0)
+        {
+          myDurability = 0;
+          firebase.database().ref("players/" + playerId).update({
+            weapon: "none"
+          })
+        }
         playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
         var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
         if(players[playerId].weapon == "sword")
@@ -511,6 +598,7 @@ function getRandomSafeSpot() {
             playerRef.update({
               weapon: players[playerToAttack].weapon
             })
+            myDurability = players[playerToAttack].weapon == "sword" ? 50 : 70
           }
           playerToAttackRef.update({
             coins: 0, 
@@ -530,6 +618,14 @@ function getRandomSafeSpot() {
         }
       })
       if(playerToAttack != null && !players[playerId].isDead && !players[playerToAttack].isDead) {
+        myDurability--;
+        if(myDurability < 0)
+        {
+          myDurability = 0;
+          firebase.database().ref("players/" + playerId).update({
+            weapon: "none"
+          })
+        }
         playerToAttackRef = firebase.database().ref("players/" + playerToAttack);
         var damage = randomFromArray([0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
         if(players[playerId].weapon == "sword")
@@ -555,6 +651,7 @@ function getRandomSafeSpot() {
             playerRef.update({
               weapon: players[playerToAttack].weapon
             })
+            myDurability = players[playerToAttack].weapon == "sword" ? 50 : 70
           }
           playerToAttackRef.update({
             coins: 0, 
@@ -563,9 +660,11 @@ function getRandomSafeSpot() {
         }
       }
     }
+    durDisplay.innerText = "Current Durability: " + myDurability;
   }
-  function OpenDialogue(message, buttonone, buttontwo) {
+  function OpenDialogue(message, buttonone, buttontwo, b1func, b2func, b1fdata, b2fdata) {
     //open a dialogue
+    let number = 2;
     dialogueDisplay.querySelector("#dialogue-text").innerText = message;
     dialogueDisplay.querySelector("#first-button").innerText = buttonone;
     dialogueDisplay.querySelector("#second-button").innerText = buttontwo;
@@ -575,25 +674,59 @@ function getRandomSafeSpot() {
     {
       dialogueDisplay.querySelector("#first-button").setAttribute("data-show", "false");
       dialogueDisplay.querySelector("#second-button").setAttribute("data-show", "false");
-    }
-    if(buttontwo == null)
+      number = 0;
+    } else if(buttontwo == null)
     {
       dialogueDisplay.querySelector("#second-button").setAttribute("data-show", "false");
+      number = 1;
     }
     dialogueDisplay.querySelector("#exit-button").setAttribute("data-show", "true");
     dialogueDisplay.setAttribute("data-show", "true");
     dialogueDisplay.querySelector("#exit-button").addEventListener("click", () => {
       CloseDialogue();
     })
-    dialogueDisplay.querySelector("#first-button").addEventListener("click", () => {
-      if(players[playerId].coins >= 40)
-      {
-        playerRef.update({
-          coins: players[playerId].coins - 40, 
-          weapon: "sword"
-        })
-      }
-    })
+    if(b1func == "item")
+    {
+      dialogueDisplay.querySelector("#first-button").addEventListener("click", () => {
+        if(players[playerId].coins >= b1fdata.price)
+        {
+          playerRef.update({
+            coins: players[playerId].coins - b1fdata.price, 
+            weapon: b1fdata.item
+          })
+        }
+        console.log(players[playerId].coins);
+        dialogueDisplay.querySelector("#first-button").replaceWith(dialogueDisplay.querySelector("#first-button").cloneNode(true));
+      })
+    }
+    if(b2func == "item")
+    {
+      dialogueDisplay.querySelector("#second-button").addEventListener("click", () => {
+        if(players[playerId].coins >= b2fdata.price)
+        {
+          playerRef.update({
+            coins: players[playerId].coins - b2fdata.price, 
+            weapon: b2fdata.item
+          })
+        }
+        dialogueDisplay.querySelector("#second-button").replaceWith(dialogueDisplay.querySelector("#second-button").cloneNode(true));
+      })
+    }
+    if(b1func == "dialogue")
+    {
+      dialogueDisplay.querySelector("#first-button").addEventListener("click", () => {
+        dialogueDisplay.querySelector("#first-button").replaceWith(dialogueDisplay.querySelector("#first-button").cloneNode(true));
+        b1fdata();
+      })
+    }
+    if(b2func == "dialogue")
+    {
+      dialogueDisplay.querySelector("#second-button").addEventListener("click", () => {
+        dialogueDisplay.querySelector("#second-button").replaceWith(dialogueDisplay.querySelector("#second-button").cloneNode(true));
+        b2fdata();
+      })
+    }
+    dialogueDisplay.querySelector("#dialogue-text").setAttribute("data-number", number);
   }
   function CloseDialogue() {
     //open a dialogue
@@ -612,6 +745,10 @@ function getRandomSafeSpot() {
     new KeyPressListener("ArrowDown", () => handleArrowPress(0, 1))
     new KeyPressListener("ArrowLeft", () => handleArrowPress(-1, 0))
     new KeyPressListener("ArrowRight", () => handleArrowPress(1, 0))
+    new KeyPressListener("KeyW", () => handleArrowPress(0, -1))
+    new KeyPressListener("KeyS", () => handleArrowPress(0, 1))
+    new KeyPressListener("KeyA", () => handleArrowPress(-1, 0))
+    new KeyPressListener("KeyD", () => handleArrowPress(1, 0))
     new KeyPressListener("Space", () => handleAttack())
 
     const allPlayersRef = firebase.database().ref(`players`);
@@ -836,6 +973,7 @@ function getRandomSafeSpot() {
       }
     })
 
+    durDisplay.innerText = "Current Durability: " + myDurability;
     placeCoin();
     oneSecondLoop();
     tickLoop();
