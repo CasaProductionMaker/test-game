@@ -477,7 +477,7 @@ function getRandomSafeSpot() {
       if(myLocation == "Shop" && getKeyString(newX, newY) == "6x4")
       {
         //Talk to shopkeeper
-        if(myDurability < 10)
+        if(myDurability < 10 && myDurability != 0)
         {
           OpenDialogue(
             "Hello there, I am the shopkeeper.", 
